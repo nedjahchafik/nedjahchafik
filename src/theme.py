@@ -25,23 +25,23 @@ FOOTER_BASELINE = 11 * mm                         # ligne de base du pied de pag
 # --------------------------------------------------------------------------- #
 # Palette
 # --------------------------------------------------------------------------- #
-NAVY = HexColor("#14243D")        # couleur primaire (titres, bandeaux)
-NAVY_DEEP = HexColor("#0B1728")   # dégradé / aplats sombres
-STEEL = HexColor("#2E5AAC")       # accent (liens, filets actifs)
-ACCENT = HexColor("#B08A3E")      # accent secondaire sobre (or vieilli)
-INK = HexColor("#1E2430")         # corps de texte
-BODY = HexColor("#333B49")        # corps de texte secondaire
-MUTED = HexColor("#6B7484")       # mentions, légendes
-RULE = HexColor("#D5DBE4")        # filets de séparation
-RULE_SOFT = HexColor("#E7EBF1")   # filets discrets
-PANEL = HexColor("#F5F7FA")       # fonds de blocs
-PANEL_ALT = HexColor("#EEF2F7")   # zébrage de tableaux
+NAVY = HexColor("#44449F")        # couleur primaire : indigo de la marque
+NAVY_DEEP = HexColor("#2E2E7C")   # dégradé / aplats sombres
+STEEL = HexColor("#5B5BC0")       # accent (liens, filets actifs)
+ACCENT = HexColor("#C9A227")      # accent secondaire sobre (or institutionnel)
+INK = HexColor("#26263A")         # corps de texte
+BODY = HexColor("#3A3A4C")        # corps de texte secondaire
+MUTED = HexColor("#6C6C82")       # mentions, légendes
+RULE = HexColor("#D6D6E8")        # filets de séparation
+RULE_SOFT = HexColor("#E7E7F3")   # filets discrets
+PANEL = HexColor("#F4F4FB")       # fonds de blocs
+PANEL_ALT = HexColor("#ECECF6")   # zébrage de tableaux / encadrés lavande
 WHITE = HexColor("#FFFFFF")
 
 SUCCESS = HexColor("#2F7D5D")
 WARNING = HexColor("#B27A16")
 DANGER = HexColor("#A8352B")
-INFO = HexColor("#2E5AAC")
+INFO = HexColor("#44449F")
 
 SEVERITY = {
     "critique": DANGER,

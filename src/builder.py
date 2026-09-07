@@ -28,12 +28,14 @@ from components import (
     AccentBar,
     HRule,
     SectionTitle,
+    box_grid,
     callout,
     data_table,
     figure,
     gantt,
     kpi_cards,
     paragraph,
+    photo_grid,
     quote,
     rich_bullets,
     rich_numbers,
@@ -246,8 +248,21 @@ def render_block(block):
     if kind == "tags":
         return tag_row(block.get("items", []), color=block.get("color", STEEL))
 
+    if kind == "box_grid":
+        return box_grid(block.get("items", []), cols=block.get("cols", 2),
+                        align=block.get("align", "center"),
+                        size=block.get("size", 8.6))
+
+    if kind == "photos":
+        return photo_grid(block.get("items", []), cols=block.get("cols", 2),
+                          max_h=block.get("max_h", 78) * mm,
+                          caption=block.get("caption", True))
+
     if kind == "figure":
-        return figure(block.get("path"), caption=block.get("caption"))
+        mw = block.get("max_w")
+        return figure(block.get("path"), caption=block.get("caption"),
+                      max_width=(mw * mm) if mw else None,
+                      max_height=block.get("max_h", 95) * mm)
 
     if kind == "signatures":
         return signature_blocks(block.get("items", []), cols=block.get("cols"))
@@ -267,8 +282,8 @@ def render_block(block):
         return CondPageBreak(block.get("h", 60) * mm)
 
     if kind == "two_columns":
-        left = [render_block(b) for b in block.get("left", [])]
-        right = [render_block(b) for b in block.get("right", [])]
+        left = _unwrap_keep([render_block(b) for b in block.get("left", [])])
+        right = _unwrap_keep([render_block(b) for b in block.get("right", [])])
         ratio = block.get("ratio", 0.5)
         gap = block.get("gap", 7) * mm
         lw = (CONTENT_WIDTH - gap) * ratio
@@ -301,6 +316,19 @@ def flatten(items):
             out.extend(flatten(it))
         elif it is not None:
             out.append(it)
+    return out
+
+
+def _unwrap_keep(flowables):
+    """Déplie les KeepTogether (incompatibles avec les cellules de tableau)."""
+    from reportlab.platypus import KeepTogether as _KT
+
+    out = []
+    for fl in flatten(flowables):
+        if isinstance(fl, _KT):
+            out.extend(fl._content)
+        else:
+            out.append(fl)
     return out
 
 

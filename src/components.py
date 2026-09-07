@@ -277,20 +277,24 @@ class SectionTitle(Flowable):
     def draw(self):
         c = self.canv
         c.saveState()
-        # Numéro
-        c.setFillColor(ACCENT)
-        c.setFont(FONT_BOLD, 19)
-        c.drawString(0, 8.5, self.number)
-        num_w = stringWidth(self.number, FONT_BOLD, 19)
-        # Filet vertical séparateur
-        x = num_w + 7
-        c.setStrokeColor(RULE)
-        c.setLineWidth(0.8)
-        c.line(x, 4, x, 21)
+        if self.number:
+            # Numéro
+            c.setFillColor(ACCENT)
+            c.setFont(FONT_BOLD, 19)
+            c.drawString(0, 8.5, self.number)
+            num_w = stringWidth(self.number, FONT_BOLD, 19)
+            # Filet vertical séparateur
+            x = num_w + 7
+            c.setStrokeColor(RULE)
+            c.setLineWidth(0.8)
+            c.line(x, 4, x, 21)
+            title_x = x + 8
+        else:
+            title_x = 0
         # Intitulé
         c.setFillColor(NAVY)
         c.setFont(FONT_SEMI, FS_H1)
-        c.drawString(x + 8, 8, self.text)
+        c.drawString(title_x, 8, self.text)
         # Filet bas
         c.setStrokeColor(NAVY)
         c.setLineWidth(1.6)
@@ -732,7 +736,7 @@ def gantt(items, months, width=None):
 
 
 def quote(text, author=None):
-    inner = [Paragraph("\u201c%s\u201d" % text, S["quote"])]
+    inner = [Paragraph("\u00ab\u2002%s\u2002\u00bb" % text, S["quote"])]
     if author:
         inner.append(Paragraph(author, S["quote_author"]))
     tbl = Table([[inner]], colWidths=[CONTENT_WIDTH])
@@ -854,5 +858,118 @@ __all__ = [
     "rich_bullets", "rich_numbers", "callout", "kpi_cards", "data_table",
     "timeline", "gantt", "quote", "two_columns", "figure",
     "signature_blocks", "tag_row", "severity_legend",
+    "box_grid", "photo_grid",
     "Paragraph", "Spacer", "PageBreak", "KeepTogether", "Table", "TableStyle",
 ]
+
+
+def box_grid(items, cols=2, bg=None, fg=None, align="center", gap=3.4 * mm,
+             min_h=11 * mm, font=None, size=8.6):
+    """Grille d'encadrés lavande (lieux, questions, profils…)."""
+    bg = bg or PANEL_ALT
+    fg = fg or NAVY
+    font = font or FONT_MEDIUM
+    n = len(items)
+    rows = (n + cols - 1) // cols
+    cell_w = (CONTENT_WIDTH - gap * (cols - 1)) / float(cols)
+
+    style = ParagraphStyle(
+        "boxgrid", fontName=font, fontSize=size, leading=size + 3.2,
+        textColor=fg, alignment=TA_CENTER if align == "center" else TA_LEFT,
+    )
+    data, st = [], []
+    for r in range(rows):
+        row, colw = [], []
+        for c in range(cols):
+            idx = r * cols + c
+            txt = items[idx] if idx < n else ""
+            row.append(Paragraph(txt, style) if txt else "")
+            colw.append(cell_w)
+            if c < cols - 1:
+                row.append("")
+                colw.append(gap)
+        data.append(row)
+        # gouttières inter-lignes
+        if r < rows - 1:
+            data.append([""] * len(colw))
+            st.append(("TOPPADDING", (0, len(data) - 1), (-1, len(data) - 1), 0))
+            st.append(("BOTTOMPADDING", (0, len(data) - 1), (-1, len(data) - 1), 0))
+            st.append(("LINEBELOW", (0, len(data) - 1), (-1, len(data) - 1), 0, WHITE))
+        base = len(data) - 1 - (1 if r < rows - 1 else 0)
+        for c in range(cols):
+            col = 2 * c
+            st += [
+                ("BACKGROUND", (col, base), (col, base), bg),
+                ("VALIGN", (col, base), (col, base), "MIDDLE"),
+                ("LEFTPADDING", (col, base), (col, base), 8),
+                ("RIGHTPADDING", (col, base), (col, base), 8),
+                ("TOPPADDING", (col, base), (col, base), 6),
+                ("BOTTOMPADDING", (col, base), (col, base), 6),
+            ]
+    colw = []
+    for c in range(cols):
+        colw.append(cell_w)
+        if c < cols - 1:
+            colw.append(gap)
+    tbl = Table(data, colWidths=colw, hAlign="LEFT")
+    tbl.setStyle(TableStyle(st))
+    if n <= 6:
+        return KeepTogether([Spacer(1, 2), tbl, Spacer(1, 8)])
+    return [Spacer(1, 2), tbl, Spacer(1, 8)]
+
+
+def photo_grid(items, cols=2, gap=3.6 * mm, max_h=78 * mm, caption=True):
+    """Grille de photographies légendées.
+
+    items : [{"path": ..., "caption": ...}]
+    """
+    n = len(items)
+    rows = (n + cols - 1) // cols
+    cell_w = (CONTENT_WIDTH - gap * (cols - 1)) / float(cols)
+    cap_style = ParagraphStyle(
+        "photocap", fontName=FONT_ITALIC, fontSize=FS_MICRO, leading=9.6,
+        textColor=MUTED, alignment=TA_LEFT, spaceBefore=2.5,
+    )
+    data, st = [], []
+    for r in range(rows):
+        img_row, cap_row, colw = [], [], []
+        for c in range(cols):
+            idx = r * cols + c
+            it = items[idx] if idx < n else None
+            if it and os.path.exists(it.get("path", "")):
+                img = Image(it["path"])
+                iw, ih = img.imageWidth, img.imageHeight
+                scale = min(cell_w / float(iw), max_h / float(ih))
+                img.drawWidth, img.drawHeight = iw * scale, ih * scale
+                img.hAlign = "CENTER"
+                img_row.append(img)
+            else:
+                img_row.append("")
+            cap_row.append(Paragraph(it.get("caption", ""), cap_style)
+                           if (it and caption and it.get("caption")) else "")
+            colw.append(cell_w)
+            if c < cols - 1:
+                img_row.append("")
+                cap_row.append("")
+                colw.append(gap)
+        data.append(img_row)
+        data.append(cap_row)
+        base = len(data) - 2
+        st += [
+            ("VALIGN", (0, base), (-1, base), "BOTTOM"),
+            ("LEFTPADDING", (0, base), (-1, base + 1), 0),
+            ("RIGHTPADDING", (0, base), (-1, base + 1), 0),
+            ("TOPPADDING", (0, base), (-1, base), 0),
+            ("BOTTOMPADDING", (0, base), (-1, base), 0),
+            ("TOPPADDING", (0, base + 1), (-1, base + 1), 2),
+            ("BOTTOMPADDING", (0, base + 1), (-1, base + 1), 9),
+            ("VALIGN", (0, base + 1), (-1, base + 1), "TOP"),
+        ]
+    colw = []
+    for c in range(cols):
+        colw.append(cell_w)
+        if c < cols - 1:
+            colw.append(gap)
+    tbl = Table(data, colWidths=colw, hAlign="LEFT")
+    tbl.setStyle(TableStyle(st))
+    return [Spacer(1, 2), tbl, Spacer(1, 6)]
