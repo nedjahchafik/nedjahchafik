@@ -1,0 +1,13 @@
+# Sorties de génération (PDF, aperçus PNG)
+livrables/
+
+# Environnements & dépendances locales
+.venv/
+node_modules/
+__pycache__/
+*.py[cod]
+
+# Éditeurs
+.vscode/
+.idea/
+.DS_Store
